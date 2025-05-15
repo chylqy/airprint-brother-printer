@@ -1,0 +1,43 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master # 当代码推送到 master 分支时触发此 workflow
+  workflow_dispatch:
+
+env:
+  # 定义一些环境变量，方便后续步骤使用
+  DOCKER_IMAGE_NAME: cups-airprint # 你的 Docker 镜像名称 (在 Docker Hub 用户名之后的部分)
+  DOCKERFILE_PATH: ./Dockerfile # Dockerfile 的路径，如果不在根目录请修改
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest # 在最新的 Ubuntu 环境中运行此 job
+
+    steps:
+      - name: Checkout code # 步骤1: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx # 步骤2: 设置 Docker Buildx (推荐，提供更好的构建功能和缓存)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub # 步骤3: 登录 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # 使用 GitHub Secrets 存储 Docker Hub 用户名
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # 使用 GitHub Secrets 存储 Docker Hub Token (推荐使用 Token 而非密码)
+
+      - name: Build and push Docker image # 步骤4: 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: . # 构建上下文路径，通常是仓库根目录
+          file: ${{ env.DOCKERFILE_PATH }} # Dockerfile 文件路径
+          push: true # 设置为 true 表示构建完成后推送镜像
+          tags: | # 定义要推送的镜像标签，可以定义多个
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+
+          # 可选: 启用 GitHub Actions Cache 来加速后续构建
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
