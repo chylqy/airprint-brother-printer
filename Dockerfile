@@ -30,6 +30,15 @@ RUN wget -O /tmp/${BROTHER_PRINTER_DRIVER_FILENAME} ${BROTHER_PRINTER_DRIVER_URL
 RUN dpkg -i --force-all /tmp/${BROTHER_PRINTER_DRIVER_FILENAME} || apt-get install -fy --no-install-recommends
 RUN rm /tmp/${BROTHER_PRINTER_DRIVER_FILENAME}
 
+# 创建一个 CUPS 管理员用户并添加到 lpadmin 组
+# lpadmin 组通常是 @SYSTEM 组的一部分，允许执行管理任务
+RUN useradd -m -s /bin/bash admin && \
+    echo "admin:${{ secrets.CUPSADMIN_PASSWORD }}" | chpasswd && \
+    usermod -aG lpadmin admin && \
+    # 在某些系统上，lpadmin 组可能不是 @SYSTEM 的一部分，需要手动添加到 cups-files.conf
+    # 检查 /etc/cups/cups-files.conf 是否有 SystemGroup 行
+    grep -q "^SystemGroup" /etc/cups/cups-files.conf || echo "SystemGroup lpadmin root" >> /etc/cups/cups-files.conf
+
 # --- 配置 CUPS 允许远程访问和共享打印机 (AirPrint 需要) ---
 RUN echo "Listen 0.0.0.0:631" >> /etc/cups/cupsd.conf
 RUN sed -i '/<Location \/>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
