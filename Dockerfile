@@ -31,19 +31,34 @@ RUN dpkg -i --force-all /tmp/${BROTHER_PRINTER_DRIVER_FILENAME} || apt-get insta
 RUN rm /tmp/${BROTHER_PRINTER_DRIVER_FILENAME}
 
 # 创建一个 CUPS 管理员用户并添加到 lpadmin 组
-# lpadmin 组通常是 @SYSTEM 组的一部分，允许执行管理任务
-RUN useradd -m -s /bin/bash admin && \
-    echo "admin:${{ secrets.CUPSADMIN_PASSWORD }}" | chpasswd && \
-    usermod -aG lpadmin admin && \
-    # 在某些系统上，lpadmin 组可能不是 @SYSTEM 的一部分，需要手动添加到 cups-files.conf
-    # 检查 /etc/cups/cups-files.conf 是否有 SystemGroup 行
-    grep -q "^SystemGroup" /etc/cups/cups-files.conf || echo "SystemGroup lpadmin root" >> /etc/cups/cups-files.conf
+# Is CUPSADMIN set? If not, set to default
+if [ -z "$CUPSADMIN" ]; then
+    CUPSADMIN="admin"
+fi
+
+# Is CUPSPASSWORD set? If not, set to $CUPSADMIN
+if [ -z "$CUPSPASSWORD" ]; then
+    CUPSPASSWORD=$CUPSADMIN
+fi
+
+if [ $(grep -ci $CUPSADMIN /etc/shadow) -eq 0 ]; then
+    adduser -S -G lpadmin --no-create-home $CUPSADMIN 
+fi
+echo $CUPSADMIN:$CUPSPASSWORD | chpasswd
 
 # --- 配置 CUPS 允许远程访问和共享打印机 (AirPrint 需要) ---
-RUN echo "Listen 0.0.0.0:631" >> /etc/cups/cupsd.conf
-RUN sed -i '/<Location \/>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
-RUN sed -i '/<Location \/admin>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
-RUN sed -i '/<Location \/admin\/conf>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
+RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && \
+	sed -i 's/Browsing Off/Browsing On/' /etc/cups/cupsd.conf && \
+ 	sed -i 's/IdleExitTimeout/#IdleExitTimeout/' /etc/cups/cupsd.conf && \
+	sed -i 's/<Location \/>/<Location \/>\n  Allow All/' /etc/cups/cupsd.conf && \
+	sed -i 's/<Location \/admin>/<Location \/admin>\n  Allow All\n  Require user @SYSTEM/' /etc/cups/cupsd.conf && \
+	sed -i 's/<Location \/admin\/conf>/<Location \/admin\/conf>\n  Allow All/' /etc/cups/cupsd.conf && \
+	sed -i 's/.*enable\-dbus=.*/enable\-dbus\=no/' /etc/avahi/avahi-daemon.conf && \
+	echo "ServerAlias *" >> /etc/cups/cupsd.conf && \
+	echo "DefaultEncryption Never" >> /etc/cups/cupsd.conf && \
+	echo "ReadyPaperSizes A4,TA4,4X6FULL,T4X6FULL,2L,T2L,A6,A5,B5,L,TL,INDEX5,8x10,T8x10,4X7,T4X7,Postcard,TPostcard,ENV10,EnvDL,ENVC6,Letter,Legal" >> /etc/cups/cupsd.conf && \
+	echo "DefaultPaperSize Letter" >> /etc/cups/cupsd.conf && \
+	echo "pdftops-renderer ghostscript" >> /etc/cups/cupsd.conf
 # --- CUPS 配置结束 ---
 
 # 配置 Avahi
