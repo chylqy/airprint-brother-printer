@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
     cups-client \
     cups-common \
     wget \
-    avahi-daemon \ # <--- 添加 Avahi 服务 \
-    libnss-mdns \  # <--- 允许系统通过 mDNS 解析主机名 (推荐) \
+    avahi-daemon \
+    libnss-mdns \
     libusb-1.0-0-dev \
     && rm -rf /var/lib/apt/lists/*
 
