@@ -24,8 +24,8 @@ usermod -aG lpadmin admin
 #4. change the password of admin
 echo $CUPSADMIN:$CUPSPASSWORD | chpasswd
 
-# 启动 Avahi 服务,宿主系统已经有avahi服务，使用host模式的容器可以使用宿主的服务
-#avahi-daemon --daemonize --no-chroot
+# 启动 Avahi 服务,虽然宿主系统已经有avahi服务，而且本容器使用host模式，且挂载了avahi服务目录，但cups仍然无法注册
+avahi-daemon --daemonize --no-chroot
 
 # 启动 CUPS 服务 (在前台运行，以便 Docker 容器保持活动)
 exec cupsd -f
