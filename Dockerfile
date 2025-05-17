@@ -30,22 +30,6 @@ RUN wget -O /tmp/${BROTHER_PRINTER_DRIVER_FILENAME} ${BROTHER_PRINTER_DRIVER_URL
 RUN dpkg -i --force-all /tmp/${BROTHER_PRINTER_DRIVER_FILENAME} || apt-get install -fy --no-install-recommends
 RUN rm /tmp/${BROTHER_PRINTER_DRIVER_FILENAME}
 
-# 创建一个 CUPS 管理员用户并添加到 lpadmin 组
-# Is CUPSADMIN set? If not, set to default
-if [ -z "$CUPSADMIN" ]; then
-    CUPSADMIN="admin"
-fi
-
-# Is CUPSPASSWORD set? If not, set to $CUPSADMIN
-if [ -z "$CUPSPASSWORD" ]; then
-    CUPSPASSWORD=$CUPSADMIN
-fi
-
-if [ $(grep -ci $CUPSADMIN /etc/shadow) -eq 0 ]; then
-    adduser -S -G lpadmin --no-create-home $CUPSADMIN 
-fi
-echo $CUPSADMIN:$CUPSPASSWORD | chpasswd
-
 # --- 配置 CUPS 允许远程访问和共享打印机 (AirPrint 需要) ---
 RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && \
 	sed -i 's/Browsing Off/Browsing On/' /etc/cups/cupsd.conf && \
