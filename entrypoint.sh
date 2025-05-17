@@ -19,6 +19,9 @@ fi
 if [ $(grep -ci lpadmin /etc/gshadow) -eq 0 ]; then
     addgroup --system lpadmin
 fi
+#3. add user admin to group lpadmin
+usermod -aG lpadmin admin
+#4. change the password of admin
 echo $CUPSADMIN:$CUPSPASSWORD | chpasswd
 
 # 启动 Avahi 服务,宿主系统已经有avahi服务，使用host模式的容器可以使用宿主的服务
