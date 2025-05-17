@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     cups-client \
     cups-common \
     wget \
+    dbus \
     avahi-daemon \
     libnss-mdns \
     libusb-1.0-0-dev \

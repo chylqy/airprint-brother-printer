@@ -24,8 +24,20 @@ usermod -aG lpadmin admin
 #4. change the password of admin
 echo $CUPSADMIN:$CUPSPASSWORD | chpasswd
 
+# 启动 D-Bus daemon
+# 使用 --system 模式，并在后台运行
+# 将日志输出到标准错误，方便调试
+dbus-daemon --system --fork --print-address 2>&1 &
+DBUS_PID=$! # 记录 D-Bus 进程ID
+# 等待 D-Bus socket 创建 (可选，但有时有用)
+sleep 1
+
+
 # 启动 Avahi 服务,虽然宿主系统已经有avahi服务，而且本容器使用host模式，且挂载了avahi服务目录，但cups仍然无法注册
 avahi-daemon --daemonize --no-chroot
+AVAHI_PID=$! # 记录 Avahi 进程ID
+# 等待 Avahi 启动并注册到 D-Bus (可选，但有时有用)
+sleep 2
 
 # 启动 CUPS 服务 (在前台运行，以便 Docker 容器保持活动)
 exec cupsd -f
