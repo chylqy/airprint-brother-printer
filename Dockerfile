@@ -31,17 +31,10 @@ RUN dpkg -i --force-all /tmp/${BROTHER_PRINTER_DRIVER_FILENAME} || apt-get insta
 RUN rm /tmp/${BROTHER_PRINTER_DRIVER_FILENAME}
 
 # --- 配置 CUPS 允许远程访问和共享打印机 (AirPrint 需要) ---
-# 确保 Listen 0.0.0.0:631 存在 (如果不存在则添加)
-RUN grep -q "Listen 0.0.0.0:631" /etc/cups/cupsd.conf || echo "Listen 0.0.0.0:631" >> /etc/cups/cupsd.conf
-# 允许远程管理和共享打印机
-# 找到 <Location /> 段落，添加或修改 Allow 行以允许 @LOCAL 或其他 IP 范围
-RUN sed -i '/<Location \/>/,/<\/Location>/ { /Order allow,deny/a\  Allow @LOCAL }' /etc/cups/cupsd.conf
-# 找到 <Location /admin> 段落，添加或修改 Allow 行以允许 @LOCAL 或其他 IP 范围
-RUN sed -i '/<Location \/admin>/,/<\/Location>/ { /Order allow,deny/a\  Allow @LOCAL }' /etc/cups/cupsd.conf
-# 找到 <Location /admin/conf> 段落，添加或修改 Allow 行以允许 @LOCAL 或其他 IP 范围
-RUN sed -i '/<Location \/admin\/conf>/,/<\/Location>/ { /Order allow,deny/a\  Allow @LOCAL }' /etc/cups/cupsd.conf
-# 确保 SharePrinters 设置为 Yes (如果不存在则添加，如果存在则修改)
-RUN sed -i 's/^#\?SharePrinters .*$/SharePrinters Yes/' /etc/cups/cupsd.conf || echo "SharePrinters Yes" >> /etc/cups/cupsd.conf
+RUN echo "Listen 0.0.0.0:631" >> /etc/cups/cupsd.conf
+RUN sed -i '/<Location \/>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
+RUN sed -i '/<Location \/admin>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
+RUN sed -i '/<Location \/admin\/conf>/,/<\/Location>/ s/Order allow,deny/Order allow,deny\n  Allow @LOCAL/' /etc/cups/cupsd.conf
 # --- CUPS 配置结束 ---
 
 # 配置 Avahi
