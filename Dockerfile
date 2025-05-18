@@ -5,14 +5,22 @@ ENV DEBIAN_FRONTEND=noninteractive
 # 安装 CUPS, wget, Avahi, 和 i386 架构支持
 RUN apt-get update && apt-get install -y \
     cups \
+    cups-pdf \
+    cups-filters \
+    cups-dev \
+    ghostscript \
+    inotify-tools \
     cups-bsd \
     cups-client \
     cups-common \
     wget \
-    dbus \
     avahi-daemon \
     libnss-mdns \
     libusb-1.0-0-dev \
+    python3 \
+    python3-dev \
+    py3-pycups \
+    rsync \
     && rm -rf /var/lib/apt/lists/*
 
 # 启用 i386 架构并安装基础 32 位库
@@ -42,7 +50,7 @@ RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && 
 	echo "ServerAlias *" >> /etc/cups/cupsd.conf && \
 	echo "DefaultEncryption Never" >> /etc/cups/cupsd.conf && \
 	echo "ReadyPaperSizes A4,TA4,4X6FULL,T4X6FULL,2L,T2L,A6,A5,B5,L,TL,INDEX5,8x10,T8x10,4X7,T4X7,Postcard,TPostcard,ENV10,EnvDL,ENVC6,Letter,Legal" >> /etc/cups/cupsd.conf && \
-	echo "DefaultPaperSize Letter" >> /etc/cups/cupsd.conf && \
+	echo "DefaultPaperSize A4" >> /etc/cups/cupsd.conf && \
 	echo "pdftops-renderer ghostscript" >> /etc/cups/cupsd.conf
 # --- CUPS 配置结束 ---
 
@@ -85,15 +93,18 @@ RUN sed -i 's/Listen localhost:631/Listen 0.0.0.0:631/' /etc/cups/cupsd.conf && 
 # RUN sed -i 's/#reflect-ipv=no/reflect-ipv=yes/' /etc/avahi/avahi-daemon.conf
 
 # 修改 nsswitch.conf 以使用 mDNS
-RUN sed -i 's/hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4/' /etc/nsswitch.conf
+# RUN sed -i 's/hosts:.*$/hosts:          files mdns4_minimal [NOTFOUND=return] dns mdns4/' /etc/nsswitch.conf
 
-
+# This will use port 631
 EXPOSE 631
-# Avahi 也使用 5353/udp 端口
-EXPOSE 5353/udp
 
-# 启动脚本来同时运行 CUPS 和 Avahi
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# We want a mount for these
+VOLUME /config
+VOLUME /services
 
-CMD ["/entrypoint.sh"]
+# Add scripts
+ADD root /
+RUN chmod +x /root/*
+
+#Run Script
+CMD ["/root/run_cups.sh"]
