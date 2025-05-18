@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     cups \
     cups-pdf \
     cups-filters \
-    cups-dev \
+    libcups2-dev \
     ghostscript \
     inotify-tools \
     cups-bsd \
@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     libusb-1.0-0-dev \
     python3 \
     python3-dev \
-    py3-pycups \
+    python3-cups \
     rsync \
     && rm -rf /var/lib/apt/lists/*
 
