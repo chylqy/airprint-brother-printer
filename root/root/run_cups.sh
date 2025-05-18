@@ -2,19 +2,26 @@
 set -e
 set -x
 
+# 创建一个 CUPS 管理员用户并添加到 lpadmin 组
 # Is CUPSADMIN set? If not, set to default
 if [ -z "$CUPSADMIN" ]; then
-    CUPSADMIN="cupsadmin"
+    CUPSADMIN="admin"
 fi
-
 # Is CUPSPASSWORD set? If not, set to $CUPSADMIN
 if [ -z "$CUPSPASSWORD" ]; then
     CUPSPASSWORD=$CUPSADMIN
 fi
-
+# 1. 创建系统用户 admin，不创建 home 目录
 if [ $(grep -ci $CUPSADMIN /etc/shadow) -eq 0 ]; then
-    adduser -S -G lpadmin --no-create-home $CUPSADMIN 
+    adduser --system --no-create-home $CUPSADMIN 
 fi
+# 2. 创建组lpadmin
+if [ $(grep -ci lpadmin /etc/gshadow) -eq 0 ]; then
+    addgroup --system lpadmin
+fi
+#3. add user admin to group lpadmin
+usermod -aG lpadmin admin
+#4. change the password of admin
 echo $CUPSADMIN:$CUPSPASSWORD | chpasswd
 
 mkdir -p /config/ppd
