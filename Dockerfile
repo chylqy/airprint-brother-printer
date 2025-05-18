@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     python3-cups \
     rsync \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # 启用 i386 架构并安装基础 32 位库
